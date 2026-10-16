@@ -1,0 +1,282 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>SRN1 — QR Sacas 10000–99999</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body { font-family: 'Segoe UI', system-ui, sans-serif; background: #f5f5f5; color: #222; min-height: 100vh; }
+
+  header { background: #FFE600; padding: 0 24px; height: 56px; display: flex; align-items: center; justify-content: space-between; box-shadow: 0 2px 4px rgba(0,0,0,0.12); }
+  .logo { font-size: 20px; font-weight: 700; color: #333; }
+  .logo span { font-weight: 400; color: #555; font-size: 14px; margin-left: 8px; }
+
+  main { max-width: 980px; margin: 28px auto; padding: 0 24px; }
+
+  .config-card { background: #fff; border-radius: 8px; padding: 24px; margin-bottom: 20px; box-shadow: 0 1px 3px rgba(0,0,0,0.08); border: 1px solid #e5e5e5; }
+  .config-card h2 { font-size: 15px; font-weight: 600; margin-bottom: 16px; color: #333; border-bottom: 1px solid #eee; padding-bottom: 10px; }
+  .config-card .hint { font-size: 12px; color: #888; margin-top: 4px; }
+
+  .btn { height: 40px; padding: 0 20px; border-radius: 6px; font-size: 14px; font-weight: 600; cursor: pointer; border: none; transition: background 0.15s, transform 0.1s; white-space: nowrap; }
+  .btn:active { transform: scale(0.97); }
+  .btn-primary { background: #3483fa; color: #fff; }
+  .btn-primary:hover { background: #2968c8; }
+  .btn-outline { background: #fff; color: #3483fa; border: 1.5px solid #3483fa; }
+  .btn-outline:hover { background: #eef3ff; }
+  .btn-sm { height: 32px; padding: 0 12px; font-size: 13px; }
+
+  .search-row { display: flex; align-items: flex-end; gap: 14px; flex-wrap: wrap; margin-bottom: 6px; }
+  .form-group { display: flex; flex-direction: column; gap: 6px; }
+  .form-group label { font-size: 12px; font-weight: 600; color: #555; text-transform: uppercase; letter-spacing: 0.4px; }
+  .form-group input { height: 40px; width: 140px; border: 1.5px solid #d0d0d0; border-radius: 6px; padding: 0 12px; font-size: 14px; color: #222; background: #fafafa; }
+  .form-group input:focus { outline: none; border-color: #3483fa; background: #fff; }
+
+  .toolbar { display: flex; align-items: center; justify-content: space-between; margin-bottom: 16px; gap: 12px; flex-wrap: wrap; margin-top: 16px; }
+  .toolbar-left { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+  .toolbar-right { display: flex; gap: 10px; flex-wrap: wrap; }
+  .selected-count { font-size: 13px; color: #555; background: #f0f4ff; border: 1px solid #c0d0ff; border-radius: 20px; padding: 3px 12px; font-weight: 500; }
+
+  .sacas-table { width: 100%; border-collapse: collapse; font-size: 14px; }
+  .sacas-table th { background: #f0f4ff; padding: 10px 12px; text-align: left; font-size: 12px; font-weight: 700; color: #555; text-transform: uppercase; letter-spacing: 0.4px; border-bottom: 2px solid #dce6ff; position: sticky; top: 0; }
+  .sacas-table td { padding: 8px 12px; border-bottom: 1px solid #eee; vertical-align: middle; }
+  .sacas-table tr:hover td { background: #f8faff; }
+  .sacas-table tr.selected-row td { background: #eef3ff; }
+  .sacas-table input[type=checkbox] { width: 16px; height: 16px; accent-color: #3483fa; cursor: pointer; }
+  .badge-facility { display: inline-block; background: #e8f0ff; color: #3483fa; border-radius: 12px; padding: 3px 10px; font-size: 12px; font-weight: 600; }
+  .badge-status-ok { display: inline-block; background: #e8f5e9; color: #3a8f4a; border-radius: 12px; padding: 3px 10px; font-size: 12px; font-weight: 600; }
+  .badge-status-busy { display: inline-block; background: #fff3e0; color: #c77700; border-radius: 12px; padding: 3px 10px; font-size: 12px; font-weight: 600; }
+  .saca-fmt { font-size: 15px; font-weight: 700; font-family: monospace; letter-spacing: 0.5px; }
+  .saca-fmt .last2 { background: #FFE600; padding: 1px 5px; border-radius: 4px; margin-left: 2px; }
+  .table-wrapper { max-height: 460px; overflow-y: auto; border-radius: 8px; border: 1px solid #e5e5e5; }
+  .table-wrapper::-webkit-scrollbar { width: 5px; }
+  .table-wrapper::-webkit-scrollbar-thumb { background: #ccc; border-radius: 4px; }
+  .empty-state { text-align: center; padding: 40px; color: #888; font-size: 14px; }
+
+  .footer-note { font-size: 12px; color: #888; text-align: center; margin: 18px 0 30px; }
+</style>
+</head>
+<body>
+
+<header>
+  <div class="logo">SRN1 <span>Etiquetas de Sacas — 10000 a 99999</span></div>
+</header>
+
+<main>
+  <div class="config-card">
+    <h2>ℹ️ Sobre esses dados</h2>
+    <p style="font-size:13px;color:#555;line-height:1.5;">
+      Sacas <strong>10000 a 99999</strong> (90.000 no total) extraídas de
+      <code>envios.adminml.com/logistics/sorting/sacas</code> (facility <strong>SRN1</strong>).
+      Cada número tem seu próprio QR code — não são cópias da mesma saca. Na etiqueta, os
+      dois últimos dígitos aparecem destacados com um separador, ex.: <strong>100<span style="background:#FFE600;padding:1px 5px;border-radius:4px;">01</span></strong> para a saca 10001.
+    </p>
+    <p class="hint">Formato do QR: {"container_id":&lt;id&gt;,"facility_id":"SRN1","assignment":"&lt;nº da saca&gt;"}</p>
+  </div>
+
+  <div class="config-card">
+    <div class="search-row">
+      <div class="form-group">
+        <label>Saca de</label>
+        <input type="number" id="f-from" min="10000" max="99999" placeholder="Ex: 10000">
+      </div>
+      <div class="form-group">
+        <label>Saca até</label>
+        <input type="number" id="f-to" min="10000" max="99999" placeholder="Ex: 10099">
+      </div>
+      <button class="btn btn-primary" onclick="buscarFaixa()">🔎 Buscar</button>
+      <span class="hint" style="align-self:center;">Por performance, mostre no máximo ~3.000 sacas por vez.</span>
+    </div>
+
+    <div class="toolbar">
+      <div class="toolbar-left">
+        <span class="selected-count" id="sacas-sel-count">0 selecionadas</span>
+      </div>
+      <div class="toolbar-right">
+        <button class="btn btn-outline btn-sm" onclick="toggleAllSacas(true)">Selecionar todas (da busca)</button>
+        <button class="btn btn-outline btn-sm" onclick="toggleAllSacas(false)">Limpar seleção</button>
+        <button class="btn btn-primary" onclick="printSacas()">🖨️ Imprimir etiquetas</button>
+      </div>
+    </div>
+
+    <div class="table-wrapper" id="sacas-table-wrapper">
+      <table class="sacas-table" id="sacas-table">
+        <thead>
+          <tr>
+            <th style="width:40px;"><input type="checkbox" id="check-all-sacas" onchange="toggleAllSacas(this.checked)"></th>
+            <th>Saca</th>
+            <th>Facility</th>
+            <th>Status</th>
+          </tr>
+        </thead>
+        <tbody id="sacas-tbody">
+          <tr><td colspan="4" class="empty-state">Use a busca acima para listar as sacas (ex.: de 10000 até 10099).</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <p class="footer-note">Cada etiqueta impressa mostra o número completo da saca (últimos 2 dígitos destacados) e um QR code próprio dessa saca.</p>
+</main>
+
+<script>
+// ========================================================
+// Dados extraídos de envios.adminml.com/logistics/sorting/sacas
+// facility SRN1 — sacas 10000 a 99999 (90000 registros)
+// Compactação: container_id é quase sempre sequencial (+7 por saca),
+// com raríssimos saltos. Guardamos apenas o id base e os saltos (delta encoding)
+// para não precisar embutir 90 mil números no arquivo.
+// ========================================================
+const SACA_MIN = 10000;
+const SACA_MAX = 99999;
+const BASE_ID = 67500819; // container_id da saca 10000
+// pares [index, extraDelta] onde extraDelta = delta_real - 7, index é 0-based (saca - SACA_MIN)
+const JUMPS = [26034, 70];
+
+// sacas que a API reportou como não disponíveis ("filling_up") no momento da extração
+const NAO_DISPONIVEIS = new Set(["40101","40201","40301","40401","40501","40502","40601","40701","40801","40901","41001","41101","41201","41301","41401","41501","41502","41601","41701","41801","41901","42001","42101","42201","42301","42401","42501","42601","42701","42801","42901"]);
+
+function containerIdForIndex(idx) {
+  let extra = 0;
+  for (let k = 0; k < JUMPS.length; k += 2) {
+    if (idx >= JUMPS[k]) extra += JUMPS[k + 1];
+  }
+  return BASE_ID + 7 * idx + extra;
+}
+function containerIdForSaca(saca) {
+  return containerIdForIndex(saca - SACA_MIN);
+}
+
+let currentList = []; // [{saca, selected}]
+let sacaSelSet = new Set();
+
+function buscarFaixa() {
+  let from = parseInt(document.getElementById('f-from').value);
+  let to = parseInt(document.getElementById('f-to').value);
+  if (isNaN(from)) { alert('Informe a saca inicial.'); return; }
+  if (isNaN(to)) to = from;
+  if (from > to) { const t = from; from = to; to = t; }
+  from = Math.max(SACA_MIN, from);
+  to = Math.min(SACA_MAX, to);
+  const total = to - from + 1;
+  if (total > 3000) {
+    if (!confirm(`Essa busca traria ${total} sacas, o que pode deixar a página lenta. Deseja continuar mesmo assim?`)) return;
+  }
+  currentList = [];
+  for (let s = from; s <= to; s++) currentList.push(s);
+  sacaSelSet.clear();
+  renderSacasTable();
+}
+
+function renderSacasTable() {
+  const tbody = document.getElementById('sacas-tbody');
+  if (!currentList.length) {
+    tbody.innerHTML = '<tr><td colspan="4" class="empty-state">Use a busca acima para listar as sacas (ex.: de 10000 até 10099).</td></tr>';
+    updateSacasCount();
+    return;
+  }
+  const rows = currentList.map(saca => {
+    const sacaStr = String(saca);
+    const main = sacaStr.slice(0, 3);
+    const last2 = sacaStr.slice(3);
+    const selected = sacaSelSet.has(saca);
+    const busy = NAO_DISPONIVEIS.has(sacaStr);
+    return `<tr class="${selected ? 'selected-row' : ''}">
+      <td><input type="checkbox" ${selected ? 'checked' : ''} onchange="toggleSacaSel(${saca}, this.checked)"></td>
+      <td><span class="saca-fmt">${main}<span class="last2">${last2}</span></span></td>
+      <td><span class="badge-facility">SRN1</span></td>
+      <td>${busy ? '<span class="badge-status-busy">Enchendo</span>' : '<span class="badge-status-ok">Pronto</span>'}</td>
+    </tr>`;
+  });
+  tbody.innerHTML = rows.join('');
+  updateSacasCount();
+}
+
+function toggleSacaSel(saca, checked) {
+  if (checked) sacaSelSet.add(saca); else sacaSelSet.delete(saca);
+  renderSacasTable();
+}
+
+function toggleAllSacas(checked) {
+  if (checked) currentList.forEach(s => sacaSelSet.add(s));
+  else sacaSelSet.clear();
+  document.getElementById('check-all-sacas').checked = checked;
+  renderSacasTable();
+}
+
+function updateSacasCount() {
+  const n = sacaSelSet.size;
+  document.getElementById('sacas-sel-count').textContent = n + ' selecionada' + (n !== 1 ? 's' : '');
+}
+
+function printSacas() {
+  const sel = [...sacaSelSet].sort((a,b) => a - b);
+  if (!sel.length) { alert('Selecione ao menos uma saca para imprimir.'); return; }
+  if (sel.length > 500 && !confirm(`Você selecionou ${sel.length} etiquetas. Isso pode gerar muitas páginas. Continuar?`)) return;
+
+  let pages = '';
+  const qrItems = [];
+
+  sel.forEach((saca, i) => {
+    const sacaStr = String(saca);
+    const main = sacaStr.slice(0, 3);
+    const last2 = sacaStr.slice(3);
+    const labelId = 'ql' + i;
+    qrItems.push({ id: labelId, saca });
+
+    pages += `
+<div class="label-page">
+  <div class="label-box">
+    <div class="label-saca-num">${main}-${last2}</div>
+    <div class="label-qr-area"><div id="${labelId}"></div></div>
+    <div class="label-footer">
+      <div class="label-rota">SRN1</div>
+    </div>
+  </div>
+</div>`;
+  });
+
+  const qrInits = qrItems.map(item => {
+    const qrPayload = JSON.stringify({
+      container_id: containerIdForSaca(item.saca),
+      facility_id: 'SRN1',
+      assignment: String(item.saca)
+    });
+    return `try{new QRCode(document.getElementById('${item.id}'),{text:${JSON.stringify(qrPayload)},width:200,height:200,colorDark:'#000',colorLight:'#fff',correctLevel:QRCode.CorrectLevel.H});}catch(e){}`;
+  }).join('\n');
+
+  const win = window.open('', '_blank', 'width=500,height=700,menubar=no,toolbar=no,location=no,status=no');
+  if (!win) { alert('Permita pop-ups nesta página para imprimir.'); return; }
+
+  win.document.write(`<!DOCTYPE html><html><head><meta charset="UTF-8"><title>Etiquetas Sacas SRN1</title>
+<style>
+  * { margin:0; padding:0; box-sizing:border-box; }
+  @page { size: 100mm 150mm; margin: 0; }
+  html, body { width:100mm; background:#fff; -webkit-print-color-adjust:exact; print-color-adjust:exact; font-family: Arial, sans-serif; }
+  .label-page { width:100mm; height:150mm; display:flex; flex-direction:column; align-items:center; justify-content:center; page-break-after:always; padding: 4mm; }
+  .label-box { width:92mm; border: 2px solid #111; border-radius: 3mm; overflow:hidden; }
+  .label-saca-num { background:#FFE600; text-align:center; font-size:48pt; font-weight:900; line-height:1.1; padding: 3mm 0; -webkit-print-color-adjust:exact; print-color-adjust:exact; }
+  .label-qr-area { display:flex; justify-content:center; align-items:center; padding: 4mm; background:#fff; border-top:1px solid #ddd; }
+  .label-qr-area canvas, .label-qr-area img { width:55mm !important; height:55mm !important; }
+  .label-footer { background:#fff; padding: 3mm 4mm; border-top: 1px solid #ddd; text-align: center; }
+  .label-rota { font-size:24pt; font-weight:800; letter-spacing:0.5px; }
+</style>
+</head><body>${pages}
+<script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"><\/script>
+<script>
+window.addEventListener('load', function(){
+  ${qrInits}
+  setTimeout(function(){
+    window.print();
+    window.addEventListener('afterprint', function(){ window.close(); });
+    setTimeout(function(){ if(!window.closed) window.close(); }, 3000);
+  }, 700);
+});
+<\/script>
+</body></html>`);
+  win.document.close();
+}
+</script>
+</body>
+</html>
